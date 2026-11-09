@@ -1,0 +1,3 @@
+import DemoApp from '../../components/demo-app';
+export function generateStaticParams(){return [[],['dashboard'],['empresas'],...Array.from({length:12},(_,i)=>['empresas',`DEMO-${i+1}`]),['emissao'],['emissao','simplificada'],['emissao','completa'],['notas','emitidas'],['notas','recebidas'],...Array.from({length:48},(_,i)=>['notas',`DEMO-N${i+1}`]),['notas','local'],...['rascunhos','tomadores','servicos','fiscal','certificados','eventos','relatorios','notificacoes','auditoria','usuarios','configuracoes','integracoes','avaliacao'].map(x=>[x])].map(slug=>({slug}));}
+export default function Page(){return <DemoApp/>}

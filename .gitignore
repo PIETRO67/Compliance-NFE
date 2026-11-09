@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.next-dev/
+out/
+*.log
+test-results/
+playwright-report/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
