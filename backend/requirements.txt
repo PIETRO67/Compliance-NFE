@@ -1,0 +1,12 @@
+fastapi==0.162.4
+uvicorn[standard]==0.54.0
+sqlalchemy==2.0.57
+alembic==1.20.1
+psycopg[binary]==3.3.8
+pydantic-settings==2.16.2
+pwdlib[argon2]==0.3.1
+cryptography==49.0.0
+pyotp==2.10.0
+email-validator==2.3.0
+redis==6.4.0
+rq==2.12.0

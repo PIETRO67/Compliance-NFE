@@ -1,0 +1,84 @@
+.operational-banner {
+  background: #243b37;
+  color: #e7f1ee;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  line-height: 1.6;
+}
+.operational-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 35px 20px;
+}
+.operational-login > section {
+  max-width: 520px;
+  width: 100%;
+  padding: 34px;
+}
+.operational-login h1 {
+  font-size: 29px;
+  margin: 22px 0;
+}
+.operational-login button {
+  margin-top: 15px;
+}
+.operational-app .sidebar nav a {
+  margin: 6px 0;
+}
+.operational-app .top-actions select {
+  max-width: 240px;
+}
+.operational-app .panel > p {
+  margin: 14px 0;
+}
+.operational-app .panel .actions {
+  margin-top: 15px;
+}
+.mfa-secret {
+  display: block;
+  font-size: 16px;
+  letter-spacing: 2px;
+  overflow-wrap: anywhere;
+  padding: 20px 0;
+}
+.recovery-codes {
+  font-size: 14px;
+  line-height: 2;
+  max-height: 45vh;
+  overflow: auto;
+  padding: 20px;
+  background: var(--bg);
+}
+.operational-app .kpi strong {
+  font-size: 23px;
+}
+.operational-app .kpi > div {
+  font-size: 12px;
+}
+.operational-app .role-select {
+  display: none;
+}
+@media (max-width: 650px) {
+  .operational-banner {
+    font-size: 9px;
+    padding: 10px 15px;
+  }
+  .operational-app .top-actions select {
+    max-width: 165px;
+    font-size: 11px;
+  }
+  .operational-app .top-actions button {
+    font-size: 10px;
+    padding: 9px;
+  }
+  .operational-login > section {
+    padding: 26px;
+  }
+  .operational-login h1 {
+    font-size: 25px;
+  }
+}

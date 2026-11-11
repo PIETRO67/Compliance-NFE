@@ -1,0 +1,84 @@
+name: ia-compliance-m1
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?configure .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?configure .env}
+      POSTGRES_DB: ${POSTGRES_DB:?configure .env}
+      APP_DB_USER: ${APP_DB_USER:?configure .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?configure .env}
+    ports: ["127.0.0.1:55432:5432"]
+    volumes: ["postgres_data:/var/lib/postgresql/data", "./backend/db-init.sh:/docker-entrypoint-initdb.d/10-runtime-role.sh:ro"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: &api_environment
+      APP_ENV: ${APP_ENV:-development}
+      ENABLE_DEV_TOOLS: ${ENABLE_DEV_TOOLS:-false}
+      DATABASE_URL: postgresql+psycopg://${APP_DB_USER}:${APP_DB_PASSWORD}@db:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY:?configure .env}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?configure .env}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      REDIS_URL: redis://redis:6379/0
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: *api_environment
+    command: ["python", "-m", "app.worker"]
+    depends_on:
+      api: {condition: service_healthy}
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: postgresql+psycopg://${APP_DB_USER}:${APP_DB_PASSWORD}@db:5432/${POSTGRES_DB}
+      MIGRATION_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      APP_DB_USER: ${APP_DB_USER}
+      SECRET_KEY: ${SECRET_KEY}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    command: ["sh", "-c", "alembic upgrade head && python -m app.grants"]
+    depends_on:
+      db: {condition: service_healthy}
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: {NEXT_PUBLIC_APP_MODE: operational}
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  postgres_data:
+  redis_data:
