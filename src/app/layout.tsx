@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./v2.css";
 import "./operational.css";
+import "./billing.css";
 import { AppProviders } from "../components/app-providers";
 export const metadata: Metadata = {
   title: "IA Compliance | NFS-e Demo",

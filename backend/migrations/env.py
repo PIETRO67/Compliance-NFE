@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, pool
 from app.config import get_settings
 from app.database import Base
 from app import models  # noqa: F401
+from app import billing_models  # noqa: F401
 
 config = context.config
 url = get_settings().migration_database_url or get_settings().database_url

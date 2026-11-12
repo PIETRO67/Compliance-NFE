@@ -21,6 +21,8 @@ secrets = [
         "MFA_ENCRYPTION_KEY",
         "POSTGRES_PASSWORD",
         "APP_DB_PASSWORD",
+        "ASAAS_API_KEY",
+        "ASAAS_WEBHOOK_AUTH_TOKEN",
     ]
 ]
 access = root / ".local/m1-access.json"

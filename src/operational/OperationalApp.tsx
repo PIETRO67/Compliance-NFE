@@ -29,6 +29,7 @@ import {
   type UserRecord,
 } from "./api";
 import { Authentication } from "./Authentication";
+import BillingApp from "./BillingApp";
 import { Field, Modal, Empty, Badge } from "../components/shared/ui";
 import { currency, displayDate } from "../lib/formatters";
 
@@ -81,6 +82,7 @@ const managerRoles = [
 ];
 const navAdmin = [
   ["/admin", "Visão geral", LayoutDashboard],
+  ["/admin/financeiro", "Financeiro · M2", Layers],
   ["/admin/clientes", "Organizações / clientes", Users],
   ["/admin/empresas", "Empresas / CNPJs", Building2],
   ["/admin/usuarios", "Usuários e convites", Users],
@@ -91,6 +93,10 @@ const navAdmin = [
 ] as const;
 const navPortal = [
   ["/portal", "Meu início", LayoutDashboard],
+  ["/portal/assinatura", "Minha assinatura", ShieldCheck],
+  ["/portal/mensalidades", "Minhas mensalidades", FileText],
+  ["/portal/consumo", "Meu consumo", Layers],
+  ["/portal/planos", "Planos disponíveis", Building2],
   ["/portal/emitir", "Preparar NFS-e", Plus],
   ["/portal/notas", "Minhas notas", FileText],
   ["/portal/rascunhos", "Rascunhos no servidor", FileText],
@@ -131,7 +137,7 @@ export default function OperationalApp() {
     nav.find(([href]) => href === path)?.[1] ||
     (path.startsWith("/portal/emitir")
       ? "Preparar NFS-e — rascunho"
-      : "Operação M1");
+      : "Operação M2");
   async function run(action: () => Promise<void>) {
     setNotice("");
     try {
@@ -174,6 +180,23 @@ export default function OperationalApp() {
         <h2>Área do escritório não disponível para seu vínculo.</h2>
         <Link href="/portal">Voltar ao portal da sua empresa</Link>
       </section>
+    );
+  } else if (
+    path.startsWith("/admin/financeiro") ||
+    [
+      "/portal/assinatura",
+      "/portal/mensalidades",
+      "/portal/consumo",
+      "/portal/planos",
+    ].includes(path)
+  ) {
+    content = (
+      <BillingApp
+        path={path}
+        company={company}
+        portal={portal}
+        key={company?.id + path}
+      />
     );
   } else if (path === "/admin/clientes") {
     content = <Organizations run={run} />;
@@ -236,8 +259,8 @@ export default function OperationalApp() {
         ))}
         <p className="notice">
           MFA obrigatório para gestores. Sessões expiram por tempo absoluto e
-          inatividade. Acesso fiscal, certificado e cobrança permanecem
-          bloqueados no M1.
+          inatividade. Emissão fiscal, certificado e cobrança de produção
+          permanecem bloqueados. Financeiro disponível somente Sandbox.
         </p>
         {identity.memberships.some((m) => managerRoles.includes(m.role)) && (
           <Members run={run} />
@@ -271,7 +294,7 @@ export default function OperationalApp() {
           <div>
             <strong>IA COMPLIANCE</strong>
             <small>
-              {portal ? "PORTAL DO CLIENTE" : "GESTÃO DO ESCRITÓRIO"} · M1
+              {portal ? "PORTAL DO CLIENTE" : "GESTÃO DO ESCRITÓRIO"} · M2
             </small>
           </div>
         </Link>
@@ -351,8 +374,8 @@ export default function OperationalApp() {
           </div>
         </header>
         <div className="operational-banner">
-          FASE 2 · M1 — AUTENTICAÇÃO E DADOS NO SERVIDOR · EMISSÃO FISCAL E
-          COBRANÇA INDISPONÍVEIS
+          FASE 2 · M2 — DADOS NO SERVIDOR · FINANCEIRO SOMENTE SANDBOX · SEM
+          EMISSÃO FISCAL OU COBRANÇA DE PRODUÇÃO
         </div>
         <div className="context-line">
           <span>
@@ -393,8 +416,8 @@ export default function OperationalApp() {
           )}
           {content}
           <footer>
-            IA Compliance · Nenhuma operação fiscal ou financeira habilitada no
-            M1.
+            IA Compliance · Sem emissão fiscal ou cobrança de produção.
+            Financeiro somente Sandbox.
           </footer>
         </main>
       </div>
@@ -1464,7 +1487,13 @@ function ProviderStatus({ company }: { company?: CompanyRecord }) {
       <h2>Contratos de provedores preparados</h2>
       <RemoteError error={remote.error} />
       <p>FiscalProvider: não configurado · M3</p>
-      <p>PaymentProvider: não configurado · M2</p>
+      <p>
+        PaymentProvider: Asaas Sandbox · envio condicionado à configuração
+        explícita.
+      </p>
+      <Link className="button secondary" href="/admin/financeiro/integracoes">
+        Consultar integração financeira M2
+      </Link>
       <p>
         CertificateProvider / NotificationProvider: contratos definidos, sem
         conexão.

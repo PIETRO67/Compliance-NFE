@@ -59,6 +59,31 @@ async function login(page: Page, key: string) {
 }
 test.beforeAll(() => resetDevAuth());
 test.afterAll(() => resetDevAuth());
+
+async function financialLogin(page: Page, key: string) {
+  await login(page, key);
+  await page
+    .getByRole("button", { name: "Configurar autenticador MFA" })
+    .click();
+  const secret = (await page.locator(".mfa-secret").textContent())!.trim();
+  await page
+    .getByLabel("Código do autenticador ou recuperação")
+    .fill(totp(secret));
+  await page.getByRole("button", { name: "Confirmar segundo fator" }).click();
+  await page.getByRole("button", { name: "Guardei meus códigos" }).click();
+}
+
+async function writeApi(page: Page, path: string, data: unknown) {
+  const identity = await (await page.request.get("/api/me")).json();
+  return page.request.post("/api" + path, {
+    data,
+    headers: {
+      Origin: "http://localhost:3001",
+      "X-Requested-With": "IA-Compliance",
+      "X-CSRF-Token": identity.csrf_token,
+    },
+  });
+}
 test("login real, catálogo e rascunho no PostgreSQL; IDOR bloqueado e logout revoga sessão", async ({
   page,
   context,
@@ -211,4 +236,205 @@ test("MFA obrigatório do escritório, convite real e aceite de novo usuário; c
     ).status(),
   ).toBe(404);
   await invitedContext.close();
+});
+
+test("M2: plano publicado, cortesia auditada, consumo não faturável e portal isolado em três tamanhos", async ({
+  page,
+  browser,
+}) => {
+  test.setTimeout(240000);
+  resetDevAuth();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await financialLogin(page, "office");
+  const companies = await (await page.request.get("/api/companies")).json();
+  const suffix = randomBytes(5).toString("hex");
+  const name = "Empresa M2 " + suffix;
+  const created = await writeApi(page, "/admin/companies", {
+    organization_id: companies[0].organization_id,
+    name,
+    cnpj: "DEMO-M2-" + suffix,
+    municipality: "Itumbiara/GO",
+    tax_regime: "A parametrizar",
+  });
+  expect(created.status()).toBe(201);
+  const company = await created.json();
+  await page.reload();
+  await page
+    .getByLabel("Empresa autorizada", { exact: true })
+    .first()
+    .selectOption(company.id);
+  await page.goto("/admin/financeiro/planos");
+  await page.getByRole("button", { name: "Novo plano", exact: true }).click();
+  await page
+    .getByLabel("Nome do plano *", { exact: true })
+    .fill("Plano M2 " + suffix);
+  await page.getByLabel("Mensalidade BRL *", { exact: true }).fill("79,00");
+  await page.getByLabel("Franquia mensal *", { exact: true }).fill("50");
+  await page
+    .getByLabel("Excedente unitário BRL — opcional", { exact: true })
+    .fill("2,35");
+  await page
+    .getByLabel("Justificativa da versão *", { exact: true })
+    .fill("Modelo sintético para validação do M2.");
+  await page
+    .getByRole("checkbox", {
+      name: "Confirmo a revisão dos valores; preço zero exige concessão administrativa.",
+    })
+    .check();
+  await page
+    .getByRole("button", { name: "Salvar rascunho do plano", exact: true })
+    .click();
+  const row = page.getByRole("row").filter({ hasText: "Plano M2 " + suffix });
+  await expect(row).toContainText("Rascunho");
+  await row.getByRole("button", { name: "Publicar", exact: true }).click();
+  await page
+    .getByLabel("Justificativa administrativa *", { exact: true })
+    .fill("Aprovação sintética de preço em teste de navegador.");
+  await page.getByRole("dialog").getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Confirmar ação", exact: true })
+    .click();
+  await expect(row).toContainText("Publicado");
+  await page.goto("/admin/financeiro/assinaturas");
+  await page
+    .getByLabel("E-mail de cobrança *", { exact: true })
+    .fill("billing@tests.example.com");
+  await page
+    .getByLabel("Endereço de cobrança *", { exact: true })
+    .fill("Endereço fictício M2, 123");
+  await page
+    .getByRole("button", { name: "Salvar titular de cobrança", exact: true })
+    .click();
+  await expect(
+    page.getByText("Titular salvo no servidor.", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Nova contratação", exact: true })
+    .click();
+  await page
+    .getByLabel("Plano publicado *", { exact: true })
+    .selectOption({ label: "Plano M2 " + suffix + " — R$ 79,00 / mês · v1" });
+  await page.getByLabel("Modalidade", { exact: true }).selectOption("COURTESY");
+  const review = new Date();
+  review.setDate(review.getDate() + 40);
+  await page
+    .getByLabel("Revisão da concessão *", { exact: true })
+    .fill(review.toISOString().slice(0, 10));
+  await page
+    .getByLabel("Justificativa / condições aprovadas *", { exact: true })
+    .fill("Cortesia sintética auditada para validação, sem pagamento.");
+  await page.getByRole("dialog").getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Criar contrato no servidor", exact: true })
+    .click();
+  await expect(
+    page.getByText("Concessão administrativa — sem pagamento", { exact: true }),
+  ).toBeVisible();
+  await page.goto("/admin/financeiro/consumo");
+  await page
+    .getByRole("button", {
+      name: "Registrar consumo simulado de desenvolvimento",
+      exact: true,
+    })
+    .click();
+  await page.getByLabel("Unidades simuladas *", { exact: true }).fill("60");
+  await page
+    .getByLabel("Justificativa administrativa *", { exact: true })
+    .fill("Evento sintético não faturável para validação visual.");
+  await page.getByRole("dialog").getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Confirmar ação", exact: true })
+    .click();
+  await expect(page.getByText(/Prévia: R\$ 23,50/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/SIMULATED · 60 unidade/)).toBeVisible();
+  await page.goto("/admin/financeiro/integracoes");
+  await expect(
+    page.getByText("Envio externo desativado", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Solicitar conciliação do CNPJ", exact: true })
+    .click();
+  await page
+    .getByLabel("Justificativa administrativa *", { exact: true })
+    .fill(
+      "Conciliação solicitada com adaptador desativado, sem dinheiro presumido.",
+    );
+  await page.getByRole("dialog").getByRole("checkbox").check();
+  await page
+    .getByRole("button", { name: "Confirmar ação", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Solicitação persistida" }),
+  ).toBeVisible();
+  for (const path of [
+    "/admin/financeiro",
+    "/admin/financeiro/politicas",
+    "/admin/financeiro/cobrancas",
+  ]) {
+    await page.goto(path);
+    await expect(page.locator(".billing-workspace")).toBeVisible();
+    await expect(page.getByText("Carregando dados do servidor…")).toHaveCount(
+      0,
+    );
+    await expect(page.locator(".billing-workspace [role=alert]")).toHaveCount(
+      0,
+    );
+  }
+  const clientContext = await browser.newContext();
+  const client = await clientContext.newPage();
+  await financialLogin(client, "manager_a");
+  await client
+    .getByLabel("Empresa autorizada", { exact: true })
+    .first()
+    .selectOption(company.id);
+  for (const path of [
+    "/portal/assinatura",
+    "/portal/mensalidades",
+    "/portal/consumo",
+    "/portal/planos",
+  ]) {
+    await client.goto(path);
+    await expect(client.locator(".billing-workspace")).toBeVisible();
+    await expect(client.getByText("Carregando dados do servidor…")).toHaveCount(
+      0,
+    );
+  }
+  expect(
+    (
+      await client.request.get(
+        "/api/billing/my/charges?company_id=" + user("emitter_b").company_id,
+      )
+    ).status(),
+  ).toBe(404);
+  await client.goto("/portal/consumo");
+  await expect(
+    client.getByRole("button", {
+      name: "Registrar consumo simulado de desenvolvimento",
+    }),
+  ).toHaveCount(0);
+  for (const [width, height] of [
+    [1440, 900],
+    [768, 1024],
+    [390, 844],
+  ]) {
+    await client.setViewportSize({ width, height });
+    expect(
+      await client.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBeTruthy();
+    await client.screenshot({
+      path: `test-results/m2-portal-${width}.png`,
+      fullPage: true,
+    });
+  }
+  const usage = await (
+    await client.request.get("/api/billing/my/usage?company_id=" + company.id)
+  ).json();
+  expect(usage.summary.payable_amount).toBe("0.00");
+  expect(usage.summary.simulated_units).toBe(60);
+  expect(errors).toEqual([]);
+  await clientContext.close();
 });

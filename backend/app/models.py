@@ -201,4 +201,5 @@ class AuditLog(Base):
     company_id: Mapped[str | None] = mapped_column(String(36), index=True)
     action: Mapped[str] = mapped_column(String(80))
     resource_id: Mapped[str | None] = mapped_column(String(36))
+    details: Mapped[dict] = mapped_column(JSON, default=dict)
     at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)

@@ -41,6 +41,7 @@ PyYAML==6.0.3
 redis==6.4.0
 rq==2.12.0
 ruff==0.17.4
+simplejson==3.20.2
 SQLAlchemy==2.0.57
 starlette==1.10.0
 typing-inspection==0.4.5

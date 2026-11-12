@@ -19,6 +19,14 @@ class Settings(BaseSettings):
     idle_minutes: int = Field(default=30, ge=5, le=120)
     redis_url: str = "redis://localhost:6379/0"
     enable_dev_tools: bool = False
+    payment_provider: Literal["disabled", "asaas"] = "disabled"
+    asaas_mode: str = "sandbox"
+    asaas_base_url: str = "https://api-sandbox.asaas.com/v3"
+    asaas_api_key: str = Field(default="", repr=False)
+    asaas_webhook_auth_token: str = Field(default="", repr=False)
+    asaas_http_user_agent: str = "IAComplianceNFSe-M2/0.2"
+    enable_billing_sandbox: bool = False
+    enable_billing_production: bool = False
 
     @property
     def origins(self) -> list[str]:
@@ -33,6 +41,10 @@ class Settings(BaseSettings):
         from cryptography.fernet import Fernet
 
         Fernet(self.mfa_encryption_key.encode())
+        if self.enable_billing_production or self.asaas_mode != "sandbox" or self.asaas_base_url != "https://api-sandbox.asaas.com/v3":
+            raise ValueError("M2 aceita exclusivamente Asaas Sandbox; produção proibida.")
+        if self.asaas_api_key and self.asaas_api_key == self.asaas_webhook_auth_token:
+            raise ValueError("Token do webhook deve ser distinto da API key.")
         if self.secret_key.startswith(("GENERATE", "CHANGE_ME")):
             raise ValueError("Gere uma chave secreta privada antes de iniciar.")
         if self.app_env in {"homologation", "production"}:

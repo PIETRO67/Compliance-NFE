@@ -128,10 +128,9 @@ def reset_development_auth():
     with Session(engine()) as db:
         users = db.scalars(select(User).where(User.email.like("%@m1.example.com"))).all()
         for user in users:
-            if user.email == "office@m1.example.com":
-                user.totp_encrypted = None
-                user.last_totp_step = -1
-                user.recovery_hashes = []
+            user.totp_encrypted = None
+            user.last_totp_step = -1
+            user.recovery_hashes = []
             for session in db.scalars(select(AuthSession).where(AuthSession.user_id == user.id)):
                 session.revoked = True
         db.execute(delete(LoginThrottle))

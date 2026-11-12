@@ -27,6 +27,8 @@ from .policy import (
     require_company,
 )
 from .providers import DisabledFiscalProvider
+from .billing_api import router as billing_router
+from .asaas import provider_status
 from .security import (
     COOKIE,
     aware,
@@ -63,11 +65,14 @@ async def lifespan(_app):
 
 app = FastAPI(
     lifespan=lifespan,
-    title="IA Compliance — API M1",
+    title="IA Compliance — API M2 Sandbox",
     version="2.1.0",
     docs_url="/api/docs" if get_settings().app_env != "production" else None,
     openapi_url="/api/openapi.json" if get_settings().app_env != "production" else None,
 )
+
+
+app.include_router(billing_router)
 
 
 @app.middleware("http")
@@ -157,7 +162,7 @@ def identity(db, user, session, raw):
 @app.get("/api/health")
 def health(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
-    return {"status": "ok", "milestone": "M1", "fiscal": "disabled", "billing": "disabled"}
+    return {"status": "ok", "milestone": "M2", "fiscal": "disabled", "billing": "sandbox_only"}
 
 
 @app.post("/api/auth/login", response_model=out.IdentityOutput, response_model_exclude_none=True)
@@ -714,7 +719,7 @@ def capabilities(company_id: str, user: m.User = Depends(current_user), db: Sess
     c = require_company(db, user, company_id, "company:read")
     return {
         "fiscal": asdict(DisabledFiscalProvider().get_capabilities({}, c.municipality, {}, "")),
-        "payment": {"configured": False, "milestone": "M2"},
+        "payment": {"milestone": "M2", **provider_status()},
         "certificate": {"configured": False, "milestone": "M3"},
     }
 

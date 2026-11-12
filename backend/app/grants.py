@@ -15,6 +15,7 @@ def main():
         db.execute(text(f"GRANT USAGE ON SCHEMA public TO {quoted}"))
         db.execute(text(f"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO {quoted}"))
         db.execute(text(f"REVOKE UPDATE, DELETE ON audit_logs FROM {quoted}"))
+        db.execute(text(f"REVOKE UPDATE, DELETE ON billing_usage_events, billing_plan_versions, billing_adjustments, billing_plan_decisions FROM {quoted}"))
         db.execute(text(f"REVOKE ALL ON alembic_version FROM {quoted}"))
     print("Permissões da aplicação configuradas; auditoria sem UPDATE/DELETE para o runtime.")
 

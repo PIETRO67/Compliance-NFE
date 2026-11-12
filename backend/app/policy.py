@@ -15,6 +15,13 @@ PERMISSIONS = {
     "CONSULTA_CLIENTE": READ,
 }
 OFFICE_ROLES = {"SUPERADMIN_ESCRITORIO", "GESTOR_ESCRITORIO", "ANALISTA_FISCAL", "SUPORTE"}
+for role in PERMISSIONS:
+    if role != "SUPORTE":
+        PERMISSIONS[role] |= {"billing:read"}
+    if role in {"SUPERADMIN_ESCRITORIO", "GESTOR_ESCRITORIO", "ADMIN_CLIENTE"}:
+        PERMISSIONS[role] |= {"billing:manage"}
+    if role in {"SUPERADMIN_ESCRITORIO", "GESTOR_ESCRITORIO"}:
+        PERMISSIONS[role] |= {"plan:publish", "billing:override", "billing:webhook:retry"}
 CLIENT_ROLES = {"ADMIN_CLIENTE", "EMISSOR_CLIENTE", "CONSULTA_CLIENTE"}
 
 

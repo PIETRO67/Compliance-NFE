@@ -27,11 +27,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setIdentity = useCallback((value: Identity | null) => {
     setState(value);
     setCsrf(value?.csrf_token || "");
-    setCompany((previous) =>
-      value?.companies.some((c) => c.id === previous)
+    setCompany((previous) => {
+      let preference = "";
+      try {
+        preference = value
+          ? sessionStorage.getItem("ia-company:" + value.user.id) || ""
+          : "";
+      } catch {}
+      return value?.companies.some((c) => c.id === previous)
         ? previous
-        : value?.companies[0]?.id || "",
-    );
+        : value?.companies.some((c) => c.id === preference)
+          ? preference
+          : value?.companies[0]?.id || "";
+    });
   }, []);
   const refresh = useCallback(async () => {
     try {
@@ -60,7 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         companyId,
         selectCompany: (id) => {
-          if (identity?.companies.some((c) => c.id === id)) setCompany(id);
+          if (identity?.companies.some((c) => c.id === id)) {
+            setCompany(id);
+            try {
+              sessionStorage.setItem("ia-company:" + identity.user.id, id);
+            } catch {}
+          }
         },
         setIdentity,
         refresh,

@@ -55,7 +55,7 @@ export function Authentication() {
   return (
     <main className="app v2 operational-login">
       <section className="entry-option">
-        <span className="eyebrow">IA COMPLIANCE · FUNDAÇÃO OPERACIONAL M1</span>
+        <span className="eyebrow">IA COMPLIANCE · OPERACIONAL M2</span>
         <h1>
           {pending
             ? "Verificação de segurança"
@@ -64,8 +64,8 @@ export function Authentication() {
               : "Acesse sua plataforma"}
         </h1>
         <p>
-          Autenticação real e dados no servidor. Emissão fiscal e cobrança
-          continuam indisponíveis.
+          Autenticação real e dados no servidor. Financeiro somente Sandbox;
+          emissão fiscal e cobrança de produção indisponíveis.
         </p>
         {connectionError && (
           <p className="error" role="alert">

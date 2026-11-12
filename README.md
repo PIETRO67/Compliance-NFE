@@ -1,6 +1,14 @@
-# IA COMPLIANCE NFS-e — demonstração V2 e fundação operacional M1
+# IA COMPLIANCE NFS-e — demonstração V2 e operacional M1/M2
 
 **Plataforma Inteligente de Emissão e Gestão de Serviços** do Grupo IA Compliance.
+
+## M2 — gestão comercial e Asaas Sandbox
+
+Planos versionados, assinaturas por CNPJ, concessões auditadas, cobranças observadas, consumo não faturável, inbox de webhook e conciliação no PostgreSQL. O adaptador externo está **desativado por padrão**, sem chave pública nem pagamento fictício. Produção financeira e emissão fiscal continuam proibidas. A descrição M1 abaixo registra a fundação anterior.
+
+Operacional nativo: `npm.cmd run dev:operational` em **http://localhost:3001** (API FastAPI em **http://127.0.0.1:8000**). Demonstração preservada em **http://localhost:3000**, por `npm.cmd run dev` ou export estático. Não há URL pública publicada.
+
+Leia [execução M2](docs/FASE2_M2_EXECUCAO.md), [regras comerciais](docs/FASE2_M2_REGRAS_COMERCIAIS.md), [diagnóstico](docs/FASE2_M2_DIAGNOSTICO.md) e [validação M2](docs/FASE2_M2_VALIDACAO.md). Contas fictícias de desenvolvimento têm credenciais aleatórias somente em `.local/m1-access.json`, ignorado pelo Git. Não há senha padrão; gestores exigem MFA.
 
 ## Fase 2 / M1 — modo operacional
 
